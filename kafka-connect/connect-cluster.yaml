@@ -1,0 +1,80 @@
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaConnect
+metadata:
+  name: my-connect-cluster
+  annotations:
+  # use-connector-resources configures this KafkaConnect
+  # to use KafkaConnector resources to avoid
+  # needing to call the Connect REST API directly
+    strimzi.io/use-connector-resources: "true"
+spec:
+  version: 3.3.2
+  replicas: 1
+  bootstrapServers: my-cluster-kafka-bootstrap:9092
+  image: n0bis/strimzi-connect-cassandra:latest
+  config:
+    group.id: connect-cluster
+    offset.storage.topic: connect-cluster-offsets
+    config.storage.topic: connect-cluster-configs
+    status.storage.topic: connect-cluster-status
+    # -1 means it will use the default replication factor configured in the broker
+    config.storage.replication.factor: -1
+    offset.storage.replication.factor: -1
+    status.storage.replication.factor: -1
+---
+# To use the KafkaConnector resource, you have to first enable the connector operator using
+# the strimzi.io/use-connector-resources annotation on the KafkaConnect custom resource.
+# From Apache Kafka 3.1.1 and 3.2.0, you also have to add the FileStreamSourceConnector
+# connector to the container image. You can do that using the kafka-connect-build.yaml example.
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaConnector
+metadata:
+  name: cassandra-sink-connector-stock
+  labels:
+    # The strimzi.io/cluster label identifies the KafkaConnect instance
+    # in which to create this connector. That KafkaConnect instance
+    # must have the strimzi.io/use-connector-resources annotation
+    # set to true.
+    strimzi.io/cluster: my-connect-cluster
+spec:
+  class: com.datastax.oss.kafka.sink.CassandraSinkConnector
+  tasksMax: 1
+  config:
+    topics: xcse
+    contactPoints: cluster1-dc1-service
+    port: 9042
+    keyspace: stocks_keyspace
+    table: stocks
+    loadBalancing.localDc: "DC1"
+    topic.xcse.stocks_keyspace.stocks.mapping: symbol=value.Symbol, ts=value.Time, close=value.Close, high=value.High, interest=value.Interest, low=value.Low, open=value.Open, volume=value.Volume
+    key.converter: org.apache.kafka.connect.storage.StringConverter
+    value.converter: org.apache.kafka.connect.json.JsonConverter
+    key.converter.schemas.enable: false
+    value.converter.schemas.enable: false
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaConnector
+metadata:
+  name: cassandra-sink-connector-ema
+  labels:
+    # The strimzi.io/cluster label identifies the KafkaConnect instance
+    # in which to create this connector. That KafkaConnect instance
+    # must have the strimzi.io/use-connector-resources annotation
+    # set to true.
+    strimzi.io/cluster: my-connect-cluster
+spec:
+  class: com.datastax.oss.kafka.sink.CassandraSinkConnector
+  tasksMax: 1
+  config:
+    topics: xcse
+    contactPoints: cluster1-dc1-service
+    port: 9042
+    keyspace: stocks_keyspace
+    table: ema
+    loadBalancing.localDc: "DC1"
+    topic.ema.stocks_keyspace.ema.mapping: symbol=value.Symbol, ts=value.Time, ema_10=value.ema_10, ema_100=value.ema_100, advise=value.advise
+    key.converter: org.apache.kafka.connect.storage.StringConverter
+    value.converter: org.apache.kafka.connect.json.JsonConverter
+    key.converter.schemas.enable: false
+    value.converter.schemas.enable: false
+# ---

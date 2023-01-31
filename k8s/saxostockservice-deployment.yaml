@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert
+    kompose.version: 1.28.0 (HEAD)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: saxostockservice
+  name: saxostockservice
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: saxostockservice
+  strategy: {}
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert
+        kompose.version: 1.28.0 (HEAD)
+      creationTimestamp: null
+      labels:
+        io.kompose.network/betashare-kafka-net: "true"
+        io.kompose.service: saxostockservice
+    spec:
+      containers:
+        - env:
+            - name: EXCHANGE
+              value: xnas
+            - name: KAFKA_BROKERS
+              value: kafka:29092
+            - name: TOP
+              value: "120"
+            - name: TOPIC
+              value: xcse
+            - name: USER_ID
+              value: "12857045"
+            - name: USER_PASS
+              value: DA537TMjsfTfVQy
+          image: saxostockservice
+          name: saxo-stock-service
+          resources: {}
+      hostname: saxo_stock_service
+      restartPolicy: Always
+status: {}

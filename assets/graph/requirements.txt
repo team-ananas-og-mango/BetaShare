@@ -1,0 +1,4 @@
+kafka-python 
+matplotlib 
+plotly
+nbformat

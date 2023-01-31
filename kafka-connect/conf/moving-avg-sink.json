@@ -1,0 +1,15 @@
+{
+	"name": "ema-avg-sink",
+	"config": {
+		"connector.class": "com.datastax.oss.kafka.sink.CassandraSinkConnector",
+		"tasks.max": "1",
+		"topics": "ema",
+		"contactPoints": "cassandra",
+		"loadBalancing.localDc": "DC1",
+		"port": 9042,
+		"topic.ema.stocks_keyspace.ema.mapping": "symbol=value.Symbol, ts=value.Time, ema_10=value.ema_10, ema_100=value.ema_100, advise=value.advise",
+		"key.converter": "org.apache.kafka.connect.storage.StringConverter",
+        "key.converter.schemas.enable": false,
+        "value.converter.schemas.enable": false
+	}
+}

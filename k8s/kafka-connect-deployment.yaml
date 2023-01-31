@@ -1,0 +1,98 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert
+    kompose.version: 1.28.0 (HEAD)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: kafka-connect
+  name: kafka-connect
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: kafka-connect
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert
+        kompose.version: 1.28.0 (HEAD)
+      creationTimestamp: null
+      labels:
+        io.kompose.network/betashare-kafka-net: "true"
+        io.kompose.service: kafka-connect
+    spec:
+      containers:
+        - env:
+            - name: CONNECT_BOOTSTRAP_SERVERS
+              value: kafka:29092
+            - name: CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR
+              value: "1"
+            - name: CONNECT_CONFIG_STORAGE_TOPIC
+              value: connect-config
+            - name: CONNECT_GROUP_ID
+              value: connect
+            - name: CONNECT_INTERNAL_KEY_CONVERTER
+              value: org.apache.kafka.connect.json.JsonConverter
+            - name: CONNECT_INTERNAL_VALUE_CONVERTER
+              value: org.apache.kafka.connect.json.JsonConverter
+            - name: CONNECT_KEY_CONVERTER
+              value: org.apache.kafka.connect.json.JsonConverter
+            - name: CONNECT_KEY_CONVERTER_SCHEMAS_ENABLE
+              value: "false"
+            - name: CONNECT_LOG4J_LOGGERS
+              value: org.reflections=ERROR
+            - name: CONNECT_LOG4J_ROOT_LOGLEVEL
+              value: INFO
+            - name: CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR
+              value: "1"
+            - name: CONNECT_OFFSET_STORAGE_TOPIC
+              value: connect-offset
+            - name: CONNECT_PLUGIN_PATH
+              value: /etc/kafka-connect/jars
+            - name: CONNECT_REPLICATION_FACTOR
+              value: "1"
+            - name: CONNECT_REST_ADVERTISED_HOST_NAME
+              value: kafka-connect
+            - name: CONNECT_REST_PORT
+              value: "8083"
+            - name: CONNECT_STATUS_STORAGE_REPLICATION_FACTOR
+              value: "1"
+            - name: CONNECT_STATUS_STORAGE_TOPIC
+              value: connect-status
+            - name: CONNECT_VALUE_CONVERTER
+              value: org.apache.kafka.connect.json.JsonConverter
+            - name: CONNECT_VALUE_CONVERTER_SCHEMAS_ENABLE
+              value: "false"
+            - name: CONNECT_ZOOKEEPER_CONNECT
+              value: zookeeper:2181
+          image: confluentinc/cp-kafka-connect:${CONF_VER}
+          livenessProbe:
+            exec:
+              command:
+                - nc -z localhost 8082 || exit 1
+            failureThreshold: 60
+            periodSeconds: 5
+            timeoutSeconds: 5
+          name: kafka-connect
+          ports:
+            - containerPort: 8083
+          resources: {}
+          volumeMounts:
+            - mountPath: /etc/kafka-connect/jars
+              name: kafka-connect-claim0
+            - mountPath: /etc/kafka-connect/connectors
+              name: kafka-connect-claim1
+      hostname: kafka-connect
+      restartPolicy: Always
+      volumes:
+        - name: kafka-connect-claim0
+          persistentVolumeClaim:
+            claimName: kafka-connect-claim0
+        - name: kafka-connect-claim1
+          persistentVolumeClaim:
+            claimName: kafka-connect-claim1
+status: {}

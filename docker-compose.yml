@@ -1,0 +1,165 @@
+version: "3.3"
+
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.0.1
+    hostname: zookeeper
+    container_name: zookeeper
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 2181 || exit 1" ]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+    ports:
+      - 2181:2181
+    networks:
+      - kafka-net
+    environment:
+      TZ: Europe/Copenhagen
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  kafka:
+    image: confluentinc/cp-kafka:7.0.1
+    hostname: kafka
+    container_name: kafka
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 9092 || exit 1" ]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+    depends_on:
+      - zookeeper
+    ports:
+      - 9092:9092
+    networks:
+      - kafka-net
+    environment:
+      TZ: Europe/Copenhagen
+      KAFKA_ADVERTISED_HOST_NAME: kafka
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+  kafka-connect:
+    image: confluentinc/cp-kafka-connect:7.0.1
+    container_name: kafka-connect
+    hostname: kafka-connect
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 8082 || exit 1" ]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+    networks:
+      - kafka-net   
+    ports:
+      - 8083:8083
+    depends_on:
+      - zookeeper
+      - kafka
+      - cassandra
+    volumes:
+      - ./kafka-connect/jars:/etc/kafka-connect/jars
+      - ./kafka-connect/conf:/etc/kafka-connect/connectors
+    environment:
+      CONNECT_BOOTSTRAP_SERVERS: kafka:29092
+      CONNECT_ZOOKEEPER_CONNECT: zookeeper:2181
+      CONNECT_REST_PORT: 8083
+      CONNECT_GROUP_ID: connect
+      CONNECT_CONFIG_STORAGE_TOPIC: connect-config
+      CONNECT_OFFSET_STORAGE_TOPIC: connect-offset
+      CONNECT_STATUS_STORAGE_TOPIC: connect-status
+      CONNECT_REPLICATION_FACTOR: 1
+      CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      CONNECT_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      CONNECT_INTERNAL_KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      CONNECT_INTERNAL_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      CONNECT_KEY_CONVERTER_SCHEMAS_ENABLE: false
+      CONNECT_VALUE_CONVERTER_SCHEMAS_ENABLE: false
+      CONNECT_REST_ADVERTISED_HOST_NAME: kafka-connect
+      CONNECT_PLUGIN_PATH: /etc/kafka-connect/jars
+      CONNECT_LOG4J_ROOT_LOGLEVEL: INFO
+      CONNECT_LOG4J_LOGGERS: org.reflections=ERROR
+
+  cassandra:
+    image: cassandra:latest
+    mem_limit: 2g
+    container_name: cassandra
+    hostname: cassandra
+    healthcheck:
+      test: ["CMD-SHELL", "cqlsh", "-e", "describe keyspaces" ]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+    networks:
+      - kafka-net
+    ports:
+      - 9042:9042
+    environment:
+      - CASSANDRA_SEEDS=cassandra
+      - CASSANDRA_CLUSTER_NAME=StockCluster
+      - CASSANDRA_DC=DC1
+      - CASSANDRA_RACK=rack1
+      - CASSANDRA_ENDPOINT_SNITCH=GossipingPropertyFileSnitch
+      - CASSANDRA_NUM_TOKENS=128
+  
+  saxostockservice:
+    container_name: saxo_stock_service
+    hostname: saxo_stock_service
+    build: 
+      context: ./SaxoStockService
+    depends_on:
+      - kafka
+    networks:
+      - kafka-net
+    environment:
+      KAFKA_BROKERS: kafka:29092
+      TOPIC: "xcse"
+      TOP: 120
+      EXCHANGE: "xnas"
+      USER_ID: ""
+      USER_PASS: ""
+    restart: 'always'
+
+  movingaverageservice:
+    container_name: moving_average_service
+    hostname: moving_average_service
+    build: 
+      context: ./MovingAverageService
+      dockerfile: local.Dockerfile
+    depends_on:
+      - kafka
+    networks:
+      - kafka-net
+    environment:
+      KAFKA_BROKERS: kafka:29092
+      KAFKA_GROUP_ID: "test_group"
+
+  kowl:
+    image: quay.io/cloudhut/kowl:master
+    ports:
+      - 8088:8080
+    hostname: kowl
+    container_name: kowl
+    environment:
+      KAFKA_BROKERS: kafka:29092
+    restart: always
+    depends_on:
+      - kafka
+    networks:
+      - kafka-net
+
+networks:
+  kafka-net:
+    driver: bridge

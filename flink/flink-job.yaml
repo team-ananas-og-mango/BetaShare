@@ -1,0 +1,45 @@
+apiVersion: flink.apache.org/v1beta1
+kind: FlinkDeployment
+metadata:
+  name: python-example
+spec:
+  image: n0bis/flink-job-ema:latest
+  imagePullPolicy: Always
+  flinkVersion: v1_17
+  flinkConfiguration:
+    #kubernetes.operator.job.autoscaler.enabled: "true"
+    #kubernetes.operator.job.autoscaler.stabilization.interval: "1m"
+    #kubernetes.operator.job.autoscaler.metrics.window: "3m"
+    #pipeline.max-parallelism: "24"
+    taskmanager.numberOfTaskSlots: "24"
+    kubernetes.jobmanager.replicas: "4"
+    #taskmanager.cpu.cores: ""
+    #taskmanager.memory.task.heap.size: ""
+    taskmanager.dynamic.task.slot: "true"
+    taskmanager.replicas: "4"
+    env.KAFKA_BROKERS: my-cluster:9092
+    env.FLINK_CLASSPATH: "/usr/local/lib/flink/lib/*"
+    kubernetes.rest-service.exposed.type: "LoadBalancer"
+    high-availability: "org.apache.flink.kubernetes.highavailability.KubernetesHaServicesFactory"
+    high-availability.storageDir: /opt/flink/ha
+    metrics.reporters: prom
+    metrics.reporter.prom.factory.class: org.apache.flink.metrics.prometheus.PrometheusReporterFactory
+    kubernetes.jobmanager.cpu: "6"
+    kubernetes.taskmanager.cpu: "12"
+  serviceAccount: flink
+  jobManager:
+    resource:
+      memory: "10g"
+      cpu: 3
+  taskManager:
+    resource:
+      memory: "10g"
+      cpu: 6
+  job:
+    jarURI: local:///opt/flink/opt/flink-python_2.12-1.16.1.jar # Note, this jarURI is actually a placeholder
+    entryClass: "org.apache.flink.client.python.PythonDriver"
+    args: ["-pyclientexec", "/usr/local/bin/python3", "-py", "/opt/flink/usrlib/main.py", "--kafka-brokers", "35.228.95.11:9094"]
+    parallelism: 12
+    upgradeMode: stateless
+
+# https://github.com/apache/flink-kubernetes-operator/tree/main/examples/flink-python-example

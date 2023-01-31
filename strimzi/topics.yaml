@@ -1,0 +1,22 @@
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: xcse
+  labels:
+    strimzi.io/cluster: my-cluster
+spec:
+  partitions: 12
+  replicas: 3
+  config:
+    retention.ms: 600000
+
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: ema
+  labels:
+    strimzi.io/cluster: my-cluster
+spec:
+  partitions: 12
+  replicas: 3

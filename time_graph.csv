@@ -1,0 +1,6 @@
+timeStamp,elapsed,label,responseCode,responseMessage,threadName,dataType,success,failureMessage,bytes,sentBytes,grpThreads,allThreads,URL,Latency,IdleTime,Connect
+1684086552736,79606,Kafka consumer,500,javax.script.ScriptException: org.apache.kafka.common.errors.InterruptException: java.lang.InterruptedException,Thread Producer 1-1,text,false,,0,0,1,1,null,0,0,0
+1684086864323,88578,Kafka consumer,500,javax.script.ScriptException: java.lang.NumberFormatException: Cannot parse null string,Thread Producer 1-1,text,false,,0,0,1,1,null,0,0,0
+1684087109942,82168,Kafka consumer,200,OK,Thread Producer 1-1,text,true,,0,0,1,1,null,0,0,0
+1684087309334,72582,Kafka consumer,200,OK,Thread Producer 1-1,text,true,,0,0,1,1,null,0,0,0
+1684087902416,134787,Kafka consumer,200,OK,Thread Producer 1-1,text,true,,0,0,1,1,null,0,0,0

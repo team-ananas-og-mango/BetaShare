@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert
+    kompose.version: 1.28.0 (HEAD)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: cassandra
+  name: cassandra
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: cassandra
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert
+        kompose.version: 1.28.0 (HEAD)
+      creationTimestamp: null
+      labels:
+        io.kompose.network/betashare-kafka-net: "true"
+        io.kompose.service: cassandra
+    spec:
+      containers:
+        - env:
+            - name: CASSANDRA_CLUSTER_NAME
+              value: StockCluster
+            - name: CASSANDRA_DC
+              value: DC1
+            - name: CASSANDRA_ENDPOINT_SNITCH
+              value: GossipingPropertyFileSnitch
+            - name: CASSANDRA_NUM_TOKENS
+              value: "128"
+            - name: CASSANDRA_RACK
+              value: rack1
+            - name: CASSANDRA_SEEDS
+              value: cassandra
+          image: cassandra:${CAS_VER}
+          livenessProbe:
+            exec:
+              command:
+                - cqlsh
+                - -e
+                - describe keyspaces
+            failureThreshold: 60
+            periodSeconds: 5
+            timeoutSeconds: 5
+          name: cassandra
+          ports:
+            - containerPort: 9042
+          resources: {}
+          volumeMounts:
+            - mountPath: /temp
+              name: cassandra-claim0
+      hostname: cassandra
+      restartPolicy: Always
+      volumes:
+        - name: cassandra-claim0
+          persistentVolumeClaim:
+            claimName: cassandra-claim0
+status: {}

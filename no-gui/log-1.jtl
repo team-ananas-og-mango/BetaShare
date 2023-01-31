@@ -1,0 +1,3 @@
+timeStamp,elapsed,label,responseCode,responseMessage,threadName,dataType,success,failureMessage,bytes,sentBytes,grpThreads,allThreads,URL,Latency,IdleTime,Connect
+1684148823945,4095,Kafka producer,200,OK,Thread Producer 1-1,text,true,,0,0,1,1,null,0,0,0
+1684148828041,16999,Kafka consumer,200,OK,Thread Producer 1-1,text,true,,0,0,1,1,null,0,0,0

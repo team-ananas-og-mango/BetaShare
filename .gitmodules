@@ -1,0 +1,6 @@
+[submodule "SaxoStockService"]
+	path = SaxoStockService
+	url = https://github.com/team-ananas-og-mango/SaxoStockService
+[submodule "MovingAverageService"]
+	path = MovingAverageService
+	url = https://github.com/team-ananas-og-mango/MovingAverageService
